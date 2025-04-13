@@ -39,7 +39,13 @@ jobs:
     - name: Dump
       run: |
         unzip ota.zip -d ota/
-        ./extractor.sh ota/payload.bin
+        ./extractor.sh ota/payload.bin && cd ota
+        mkdir system/ vendor odm system_ext product
+        sudo mount -o ro system.img system/
+        sudo mount -o ro vendor.img vendor/
+        sudo mount -o ro odm.img odm/
+        sudo mount -o ro product.img product/
+        sudo mount -o ro system_ext.img system_ext/
 
     - name: Zip
       run: |
