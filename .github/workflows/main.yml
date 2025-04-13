@@ -38,7 +38,8 @@ jobs:
 
     - name: Dump
       run: |
-        ./extractor.sh ota.zip 
+        unzip ota.zip -d ota/
+        ./extractor.sh ota/payload.bin
 
     - name: Zip
       run: |
