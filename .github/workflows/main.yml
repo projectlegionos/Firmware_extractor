@@ -1,0 +1,59 @@
+name: Dump firmware
+
+on:
+  workflow_dispatch:
+    inputs:
+      ota:
+        description: 'OTA'
+        required: true
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Run maximize-build-space
+      uses: easimon/maximize-build-space@master
+      with:
+        remove-android: 'true'
+        remove-dotnet: 'true'
+        remove-haskell: 'true'
+        remove-codeql: 'true'
+        remove-docker-images: 'true'
+      
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Setup
+      run: |
+        sudo apt update
+        sudo apt -y install git wget
+        wget https://raw.githubusercontent.com/AndroidDumps/dumpyara/refs/heads/master/setup.sh
+        chmod + x setup sh
+        sudo bash setup.sh
+        
+    - name: Download
+      id: download
+      run: |
+        curl -L ${{ inputs.ota }} -o ota.zip
+        echo ::set-output name=ota_ver::`unzip -p ota.zip META-INF/com/android/metadata | grep ^version_name= | cut -b 14-`
+
+    - name: Dump
+      run: |
+        ./extractor.sh ota.zip 
+
+    - name: Zip
+      run: |
+      cd ota/
+       for dir in odm product system system_ext vendor; do
+        sudo zip -r "${dir}.zip" "$dir"
+        done
+      
+    - name: Upload release assets
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: ota/*.zip
+        artifactErrorsFailBuild: true
+        body: ${{ inputs.ota }}
+        tag: ${{ steps.download.outputs.ota_ver }}
+        token: ${{ secrets.GITHUB_TOKEN }}
